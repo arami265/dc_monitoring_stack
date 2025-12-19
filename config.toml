@@ -1,0 +1,58 @@
+[influx]
+host_url = "http://localhost:8181"
+database = "pzem_demo"
+precision = "ns"
+
+# Prefer env var, keep file token empty unless you accept the risk.
+token_env_var = "INFLUXDB3_AUTH_TOKEN"
+token_fallback = ""
+
+# Request tuning
+timeout_s = 5.0
+
+[poller]
+measurement = "pzem_dc"
+
+interval_s = 1.0
+
+# If everything is silent, optionally slow down a bit
+silent_backoff_s = 0.0
+
+# Influx write failure pause (keeps poller alive through transient DB restarts)
+influx_retry_delay_s = 2.0
+
+# Reconnect quickly if we see hard failures (exceptions, broken serial socket)
+modbus_reconnect_after_hard_error_iters = 3
+
+# OPTIONAL: if you want reconnect after long all-silent stretches (only after initial success)
+# Set to 0 to disable (recommended default, since <7V is expected to be “silent”)
+modbus_reconnect_after_all_silent_iters = 0
+
+modbus_reconnect_attempts = 5
+modbus_reconnect_base_delay_s = 1.0
+
+# Optional global tags you want on every point
+[tags]
+site = "low_voltage_lab"
+rig = "demo1"
+
+[modbus]
+# NEW (optional): if provided, code auto-selects the first usable port in this list
+# and /dev/serial0 wins if present.
+ports = ["/dev/serial0", "/dev/ttyUSB0"]
+
+# Old single-port setting still works as fallback:
+port = "/dev/ttyUSB0"
+
+baudrate = 9600
+stopbits = 1
+parity = "N"
+bytesize = 8
+timeout_s = 0.6
+
+[scan]
+start_id = 0
+end_id = 5
+verbose = false
+try_params = true
+per_id_delay_s = 0.6
