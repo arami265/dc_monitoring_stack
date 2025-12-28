@@ -31,6 +31,9 @@ modbus_reconnect_after_all_silent_iters = 0
 modbus_reconnect_attempts = 5
 modbus_reconnect_base_delay_s = 1.0
 
+# If true, apply configured shunt codes to devices at startup when mismatches are detected.
+apply_shunt_codes = false
+
 [pzem]
 device_count = 4 # number of PZEM devices to read
 default_shunt_code = 1 # default shunt code applied when unit ID missing

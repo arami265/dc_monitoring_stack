@@ -13,7 +13,7 @@ from util.influx import InfluxClient, pzem_reading_to_lp
 from util.modbus import resolve_modbus_port
 
 # Use PZEM utilities (this is the point of util/pzem.py)
-from util.pzem import read_pzem, make_modbus_client
+from util.pzem import read_pzem, make_modbus_client, read_params, set_shunt_code
 
 
 def project_root() -> Path:
@@ -116,6 +116,40 @@ def reconnect_modbus(
     raise SystemExit(f"Modbus reconnect failed after {attempts} attempts. Last error: {last_err}")
 
 
+def _apply_shunt_codes(
+    client: ModbusSerialClient,
+    *,
+    unit_ids: list[int],
+    shunt_codes: dict[int, int],
+    apply_changes: bool,
+) -> None:
+    for unit_id in unit_ids:
+        if unit_id < 1:
+            print(f"[WARN] Skipping unit id {unit_id}; unit IDs must start at 1.")
+            continue
+        expected = shunt_codes.get(unit_id)
+        if expected is None:
+            print(f"[WARN] No shunt code configured for unit {unit_id}; skipping.")
+            continue
+        try:
+            params = read_params(client, unit_id)
+        except Exception as e:
+            print(f"[WARN] Could not read shunt code for unit {unit_id}: {e}")
+            continue
+        if params.shunt_code == expected:
+            continue
+        print(
+            f"[WARN] Unit {unit_id} shunt code mismatch "
+            f"(device={params.shunt_code}, expected={expected})."
+        )
+        if apply_changes:
+            try:
+                set_shunt_code(client, unit_id, expected)
+                print(f"[INFO] Unit {unit_id} shunt code updated to {expected}.")
+            except Exception as e:
+                print(f"[WARN] Failed to set shunt code for unit {unit_id}: {e}")
+
+
 def main() -> None:
     root = project_root()
     toml_path = root / "config.toml"
@@ -127,6 +161,7 @@ def main() -> None:
     poller = raw_cfg.get("poller", {})
     poll_interval = float(poller.get("interval_s", influx_settings.poll_interval_s))
     measurement = str(poller.get("measurement", influx_settings.measurement))
+    apply_shunt_codes = bool(poller.get("apply_shunt_codes", False))
 
     silent_backoff_s = float(poller.get("silent_backoff_s", 0.0))
     influx_retry_delay_s = float(poller.get("influx_retry_delay_s", 2.0))
@@ -156,6 +191,13 @@ def main() -> None:
     client: Optional[ModbusSerialClient] = None
     try:
         client = connect_modbus(raw_cfg)
+
+        _apply_shunt_codes(
+            client,
+            unit_ids=unit_ids,
+            shunt_codes=pzem_config.PZEM_SHUNT_CODES,
+            apply_changes=apply_shunt_codes,
+        )
 
         silent_streak: Dict[int, int] = {uid: 0 for uid in unit_ids}
 
