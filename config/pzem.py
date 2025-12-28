@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import warnings
 import os
 import stat
 
@@ -129,6 +130,29 @@ DEFAULT_SHUNT_CODE = int(_PZEM.get("default_shunt_code", 0x0001))
 _SHUNT_OVERRIDES_RAW = _PZEM.get("shunt_codes", {})
 _SHUNT_OVERRIDES = _as_int_key_dict(_SHUNT_OVERRIDES_RAW)
 
+
+def _warn_out_of_range_keys(raw: Any, label: str) -> None:
+    if not isinstance(raw, dict):
+        return
+    out_of_range: list[int] = []
+    for key in raw.keys():
+        try:
+            key_int = int(key)
+        except Exception:
+            continue
+        if key_int not in PZEM_IDS:
+            out_of_range.append(key_int)
+    if out_of_range:
+        unique = sorted(set(out_of_range))
+        warnings.warn(
+            f"{label} keys {unique} are outside configured PZEM_IDS {PZEM_IDS}. "
+            "Update pzem.device_count or remove/adjust keys.",
+            RuntimeWarning,
+        )
+
+
+_warn_out_of_range_keys(_SHUNT_OVERRIDES_RAW, "pzem.shunt_codes")
+
 PZEM_SHUNT_CODES = {device_id: DEFAULT_SHUNT_CODE for device_id in PZEM_IDS}
 for device_id, code in _SHUNT_OVERRIDES.items():
     if device_id in PZEM_SHUNT_CODES:
@@ -138,6 +162,7 @@ for device_id, code in _SHUNT_OVERRIDES.items():
             pass
 
 _LABELS_RAW = _PZEM.get("labels", {})
+_warn_out_of_range_keys(_LABELS_RAW, "pzem.labels")
 LABELS = {str(k): str(v) for k, v in (_LABELS_RAW.items() if isinstance(_LABELS_RAW, dict) else [])}
 
 SCAN_START_ID = int(_SCAN.get("start_id", 1))
