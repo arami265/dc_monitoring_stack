@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional
 from pymodbus.client import ModbusSerialClient
 
 from config.influx import load_influx_settings
+from config import pzem as pzem_config
 from util.influx import InfluxClient, pzem_reading_to_lp
 
 # Use PZEM utilities (this is the point of util/pzem.py)
@@ -168,10 +169,14 @@ def main() -> None:
     modbus_reconnect_base_delay_s = float(poller.get("modbus_reconnect_base_delay_s", 1.0))
 
     # PZEM config
-    pzem_cfg = raw_cfg.get("pzem", {})
-    device_count = int(pzem_cfg.get("device_count", 1))
-    labels = pzem_cfg.get("labels", {})
-    unit_ids = list(range(1, device_count + 1))
+    device_count = pzem_config.NUM_PZEMS
+    labels = pzem_config.LABELS
+    unit_ids = list(pzem_config.PZEM_IDS)
+    if device_count != len(unit_ids):
+        print(
+            "[WARN] PZEM config mismatch: NUM_PZEMS does not match PZEM_IDS; "
+            "continuing with PZEM_IDS."
+        )
 
     global_tags: Dict[str, str] = dict(raw_cfg.get("tags", {}) or {})
 
