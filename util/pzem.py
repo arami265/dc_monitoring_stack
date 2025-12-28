@@ -367,6 +367,7 @@ def read_pzem(
     label: Optional[str] = None,
     *,
     verbose: bool = VERBOSE_READ_DEFAULT,
+    log_errors: bool = False,
 ) -> Optional[PzemReading]:
     """
     Read 8 input registers from PZEM-017.
@@ -385,8 +386,9 @@ def read_pzem(
             timeout_s=float(TIMEOUT),
         )
     except PzemModbusError as e:
-        name = label or f"unit {unit_id}"
-        print(f"[{name}] ERROR reading unit {unit_id}: {e} ({e.detail or ''})")
+        if log_errors:
+            name = label or f"unit {unit_id}"
+            print(f"[{name}] ERROR reading unit {unit_id}: {e} ({e.detail or ''})")
         return None
 
     raw_v, raw_i, raw_pL, raw_pH, raw_eL, raw_eH, raw_hv, raw_lv = regs

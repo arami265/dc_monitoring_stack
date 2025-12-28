@@ -206,7 +206,13 @@ def main() -> None:
                 label = labels.get(str(unit_id), f"unit{unit_id}")
 
                 try:
-                    reading = read_pzem(client, unit_id=unit_id, label=label, verbose=False)
+                    reading = read_pzem(
+                        client,
+                        unit_id=unit_id,
+                        label=label,
+                        verbose=False,
+                        log_errors=False,
+                    )
                 except Exception as e:
                     hard_error_this_iter = True
                     silent_streak[unit_id] += 1
