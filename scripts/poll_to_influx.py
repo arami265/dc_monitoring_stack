@@ -200,6 +200,7 @@ def main() -> None:
 
             lines: list[str] = []
             any_success = False
+            loop_ts: Optional[int] = None
 
             for unit_id in unit_ids:
                 label = labels.get(str(unit_id), f"unit{unit_id}")
@@ -237,12 +238,16 @@ def main() -> None:
                     "label": str(label),
                 }
 
+                if loop_ts is None:
+                    loop_ts = time.time_ns()
+
                 lines.append(
                     pzem_reading_to_lp(
                         measurement=measurement,
                         unit_id=unit_id,
                         fields=fields,
                         tags=tags,
+                        ts_ns=loop_ts,
                     )
                 )
 
