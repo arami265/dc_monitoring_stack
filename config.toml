@@ -31,6 +31,12 @@ modbus_reconnect_after_all_silent_iters = 0
 modbus_reconnect_attempts = 5
 modbus_reconnect_base_delay_s = 1.0
 
+[pzem]
+device_count = 4 # number of PZEM devices to read
+default_shunt_code = 1 # default shunt code applied when unit ID missing
+shunt_codes = { 0 = 1, 1 = 2, 2 = 1, 3 = 1 } # per-unit shunt code map by unit ID
+labels = { 0 = "main_feed", 1 = "aux_bus", 2 = "charger", 3 = "spare" } # unit ID label; becomes the "label" tag in Influx/Grafana
+
 # Optional global tags you want on every point
 [tags]
 site = "low_voltage_lab"
