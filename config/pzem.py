@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
-import os
-import stat
+
+from util.modbus import resolve_modbus_port
 
 try:
     import tomllib  # py3.11+
@@ -39,40 +39,6 @@ def _load_root_toml(path: Path = DEFAULT_TOML_PATH) -> dict[str, Any]:
         return {}
 
 
-def _port_usable(p: str) -> bool:
-    """
-    Conservative check: must exist and be a char device. Read/write access helps too.
-    (We keep this conservative because import-time should not explode.)
-    """
-    try:
-        st = os.stat(p)
-        if not stat.S_ISCHR(st.st_mode):
-            return False
-        # If access check fails, connect() might still fail later; treat as not-usable.
-        return os.access(p, os.R_OK | os.W_OK)
-    except FileNotFoundError:
-        return False
-    except Exception:
-        # If something odd happens, don't block; let runtime connect() decide.
-        return True
-
-
-def _pick_serial_port(modbus_cfg: dict[str, Any]) -> str:
-    """
-    Backward compatible:
-      - If [modbus].ports exists and is non-empty, pick first usable in order.
-      - Otherwise, use [modbus].port (legacy).
-    """
-    ports = modbus_cfg.get("ports") or modbus_cfg.get("port_candidates")
-    if isinstance(ports, (list, tuple)) and ports:
-        for p in ports:
-            ps = str(p)
-            if _port_usable(ps):
-                return ps
-        # none usable; fall back to legacy port setting
-    return str(modbus_cfg.get("port", "/dev/ttyUSB0"))
-
-
 _RAW = _load_root_toml(DEFAULT_TOML_PATH)
 
 # Sections (may be missing)
@@ -88,7 +54,7 @@ _PZEM = dict(_RAW.get("pzem", {}) or {})  # optional; you can add later
 METHOD = str(_MODBUS.get("method", "rtu"))  # optional; poller already guards version differences
 
 # UPDATED: choose from modbus.ports if present, else modbus.port
-SERIAL_PORT = _pick_serial_port(_MODBUS)
+SERIAL_PORT = resolve_modbus_port(_MODBUS)
 
 BAUDRATE = int(_MODBUS.get("baudrate", 9600))
 BYTESIZE = int(_MODBUS.get("bytesize", 8))

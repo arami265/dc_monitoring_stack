@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import time
-import os
-import stat
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -12,6 +10,7 @@ from pymodbus.client import ModbusSerialClient
 from config.influx import load_influx_settings
 from config import pzem as pzem_config
 from util.influx import InfluxClient, pzem_reading_to_lp
+from util.modbus import resolve_modbus_port
 
 # Use PZEM utilities (this is the point of util/pzem.py)
 from util.pzem import read_pzem, make_modbus_client
@@ -27,38 +26,6 @@ def load_root_toml(path: Path) -> dict:
     except ModuleNotFoundError:  # pragma: no cover
         import tomli as tomllib  # type: ignore
     return tomllib.loads(path.read_text(encoding="utf-8"))
-
-
-def _port_usable(p: str) -> bool:
-    try:
-        st = os.stat(p)
-        if not stat.S_ISCHR(st.st_mode):
-            return False
-        return os.access(p, os.R_OK | os.W_OK)
-    except FileNotFoundError:
-        return False
-    except Exception:
-        # If in doubt, allow connect() to decide.
-        return True
-
-
-def resolve_modbus_port(cfg: dict) -> str:
-    """
-    Backward compatible + safe:
-      - If cfg['modbus']['ports'] is present and non-empty, pick first usable in order.
-      - Else use cfg['modbus']['port'] (legacy).
-    """
-    m = dict(cfg.get("modbus", {}) or {})
-
-    ports = m.get("ports") or m.get("port_candidates")
-    if isinstance(ports, (list, tuple)) and ports:
-        for p in ports:
-            ps = str(p)
-            if _port_usable(ps):
-                return ps
-        # None usable -> fall back to legacy port
-
-    return str(m.get("port", "/dev/ttyUSB0"))
 
 
 def _should_log_silence(streak: int) -> bool:
