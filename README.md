@@ -1,12 +1,14 @@
 # DC Monitoring Stack
 
 ## Overview
-This project aims to be an open source DC power sensor you can build from accessible components (Raspberry Pi + shunt + PZEM-017), with a simple software stack that turns raw measurements into dashboards. End-to-end goal: Raspberry Pi + shunt wiring → sensor polling → database ingestion → Grafana visualization.
+This project aims to be an open source DC power sensor you can build from accessible components (Raspberry Pi + shunt + PZEM-017 DC power sensor), with a simple software stack that turns raw measurements into dashboards.
+
+End-to-end goal: Raspberry Pi + RS485 CAN HAT / RS485 USB adapter → shunt/sensor wiring → sensor polling over Modbus → database ingestion → Grafana visualization.
 
 Main entrypoint: `scripts/poll_to_influx.py` (the poller that reads PZEM sensors over Modbus and writes to InfluxDB).
 
-**In scope:** wiring the shunt/PZEM sensors, polling them on a Raspberry Pi, ingesting readings into the database (InfluxDB), and visualizing the data in Grafana.
-**Out of scope:** hardware procurement, OS setup, or Grafana dashboard design beyond basic visualization wiring.
+ - **In scope:** wiring the shunt/DC power sensors, polling them on a Raspberry Pi, ingesting readings into the database (InfluxDB), and visualizing the data in Grafana.
+ - **Out of scope:** hardware procurement, OS setup, or Grafana dashboard design beyond basic visualization wiring.
 
 **High-level data flow**
 - Sensor/shunt (PZEM-017) →
